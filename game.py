@@ -6,6 +6,7 @@ def get_san_square(x,y):
     return chr(y + 97) + str(x+1)
 
 class MoveTree():
+    last_move = ""
     legal_moves = {}
     board = []
     wtm = True #White to move
@@ -13,12 +14,13 @@ class MoveTree():
     checkmate = False
     illegal = False
 
-    def __init__(self, depth=0, board=STARTING_POSITION, wtm=True, castleable=[True,True,True,True]):
+    def __init__(self, depth=0, board=STARTING_POSITION, wtm=True, castleable=[True,True,True,True], last_move = ''):
         self.legal_moves = {}
         self.board = board
         self.wtm = wtm
         self.populate(depth)
         self.castleable = castleable
+        self.last_move = last_move
 
     def __str__(self):
         out = ""
@@ -35,8 +37,15 @@ class MoveTree():
 
     def populate(self, depth=0):
         if depth > 0:
+            #print(depth)
+            #print(self.last_move)
+            #print('---')
             if len(self.legal_moves) == 0:
+                
+                #print(len(self.legal_moves))
                 find_all_legal_moves(self)
+                #print(len(self.legal_moves))
+                #print('-----')
             for leaf in self.legal_moves.values():
                 leaf.populate(depth-1)
             self.illegal_prune()
@@ -53,7 +62,7 @@ class MoveTree():
                 new_castleable = copy.deepcopy(self.castleable)
                 new_castleable[0] = False
                 new_castleable[1] = False
-                self.legal_moves['0-0'] = MoveTree(0, new_board, not self.wtm, new_castleable)
+                self.legal_moves['0-0'] = MoveTree(0, new_board, not self.wtm, new_castleable, '0-0')
             if castleable[1] and get(0,1) == '-' and get(0,2) == '-' and get(0,3) == '-': #Queenside
                 new_board = copy.deepcopy(self.board)
                 new_board[0][0] = '-'
@@ -64,7 +73,7 @@ class MoveTree():
                 new_castleable = copy.deepcopy(self.castleable)
                 new_castleable[0] = False
                 new_castleable[1] = False
-                self.legal_moves['0-0-0'] = MoveTree(0, new_board, not self.wtm, new_castleable)
+                self.legal_moves['0-0-0'] = MoveTree(0, new_board, not self.wtm, new_castleable, '0-0-0')
         else:
             if castleable[2] and get(7,6) == '-' and get(7,5) == '-': #Kingside
                 new_board = copy.deepcopy(self.board)
@@ -75,7 +84,7 @@ class MoveTree():
                 new_castleable = copy.deepcopy(self.castleable)
                 new_castleable[2] = False
                 new_castleable[3] = False
-                self.legal_moves['0-0'] = MoveTree(0, new_board, not self.wtm, new_castleable)
+                self.legal_moves['0-0'] = MoveTree(0, new_board, not self.wtm, new_castleable, '0-0')
             if castleable[3] and get(7,1) == '-' and get(7,2) == '-' and get(7,3) == '-': #Queenside
                 new_board = copy.deepcopy(self.board)
                 new_board[7][0] = '-'
@@ -86,7 +95,7 @@ class MoveTree():
                 new_castleable = copy.deepcopy(self.castleable)
                 new_castleable[2] = False
                 new_castleable[3] = False
-                self.legal_moves['0-0-0'] = MoveTree(0, new_board, not self.wtm, new_castleable)
+                self.legal_moves['0-0-0'] = MoveTree(0, new_board, not self.wtm, new_castleable, '0-0-0')
 
 
     def illegal_prune(self):
@@ -97,8 +106,7 @@ class MoveTree():
         
         for san in illegal_sans:
             self.legal_moves.pop(san)
-        #print(self.board)
-        print(len(self.legal_moves))
+            #print(len(self.legal_moves))
         if len(self.legal_moves) == 0:
             self.checkmate = True
 
@@ -133,9 +141,9 @@ class MoveTree():
         if san in self.legal_moves:
             insert_index = 0 if san[0].islower() else 1
             new_san = san[:insert_index] + get_san_square(from_x,from_y) + san[insert_index:]
-            self.legal_moves[new_san] = MoveTree(0, new_board, not self.wtm, new_castleable)
+            self.legal_moves[new_san] = MoveTree(0, new_board, not self.wtm, new_castleable, san)
         else:
-            self.legal_moves[san] = MoveTree(0, new_board, not self.wtm, new_castleable)
+            self.legal_moves[san] = MoveTree(0, new_board, not self.wtm, new_castleable, san)
     
     def generate_promotion(self, from_x, from_y, to_x, to_y):
         to_piece = self.get(to_x,to_y)
@@ -167,7 +175,7 @@ class MoveTree():
 
 
 class Game():
-    move_tree = MoveTree(2)
+    move_tree = MoveTree(3)
 
     def __str__(self):
         out = "  -----------------\n"
