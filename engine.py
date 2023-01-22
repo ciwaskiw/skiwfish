@@ -17,20 +17,15 @@ def eval(tree):
     flattened_board = [item for sublist in board for item in sublist] #Thanks for the one liner https://stackoverflow.com/questions/952914/how-do-i-make-a-flat-list-out-of-a-list-of-lists
     for i in range(0,len(flattened_board)):
         square = flattened_board[i]
-        if square != '-':
-            if not wtm:
-                if square.isupper():
-                    score += MATERIAL_VALUES[square]
-                    score += TABLE_MAP[square][i]
-                else:
-                    score -= MATERIAL_VALUES[square.upper()]
-            elif wtm and square.islower():
-                if square.islower():
-                    score += MATERIAL_VALUES[square.upper()]
-                    score += list(reversed(TABLE_MAP[square.upper()]))[i]
-                else:
-                    score -= MATERIAL_VALUES[square]
-    score += len(tree.legal_moves) * 100
+        if square != '-': #Check each square, skip if empty
+            if square.isupper(): #If this is a white piece
+                score += MATERIAL_VALUES[square] #Add the material value of this piece
+                score += TABLE_MAP[square][i] #Add the piece-square-value for this piece on this square
+            else: #If this is a black piece
+                score -= MATERIAL_VALUES[square.upper()] #Subtract the material value
+                score -= list(reversed(TABLE_MAP[square.upper()]))[i] #Subtract the piece-square-value for this piece on this square
+    mobility = len(tree.legal_moves) * 100 #Get mobility score
+    score += (1 if wtm else -1) * mobility #Add if evaluating white, subtract if evaluating black
     if tree.checkmate:
         score += 200000
     return score

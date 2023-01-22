@@ -15,8 +15,8 @@ def scan(tree, x, y, dir_x, dir_y, distance=7):
                 tree.generate_legal_move(x, y, x + i*dir_x, y + i*dir_y)
             return
 
-def find_all_legal_moves(tree):
-    legal_moves = {}
+def find_all_children(tree):
+    children = {}
     for x in range(0,8):
         for y in range(0,8):
             #If we found that our king is threatened by a legal move, stop processing
@@ -51,7 +51,9 @@ def find_all_legal_moves(tree):
                     knight_moves(tree,x,y)
                 elif piece == 'k':
                     king_moves(tree,x,y)
-    tree.castle_check()
+    castle_check(tree)
+    if len(tree.children) == 0:
+        tree.checkmate = True
     
 
 def king_moves(tree,x,y):
@@ -98,3 +100,50 @@ def pawn_moves(tree,x,y):
         generate_legal_move(x,y,x+inc,y+1)
     if get(x+inc,y-1).islower():
         generate_legal_move(x,y,x+inc,y-1)
+
+def castle_check(tree):
+        get, wtm, castleable = tree.get, tree.wtm, tree.castleable
+        if wtm:
+            if castleable[0] and get(0,6) == '-' and get(0,5) == '-': #Kingside
+                new_board = copy.deepcopy(tree.board)
+                new_board[0][4] = '-'
+                new_board[0][5] = 'R'
+                new_board[0][6] = 'K'
+                new_board[0][7] = '-'
+                new_castleable = copy.deepcopy(tree.castleable)
+                new_castleable[0] = False
+                new_castleable[1] = False
+                tree.children['0-0'] = MoveTree(0, new_board, not tree.wtm, new_castleable, '0-0')
+            if castleable[1] and get(0,1) == '-' and get(0,2) == '-' and get(0,3) == '-': #Queenside
+                new_board = copy.deepcopy(tree.board)
+                new_board[0][0] = '-'
+                new_board[0][1] = '-'
+                new_board[0][2] = 'K'
+                new_board[0][3] = 'R'
+                new_board[0][4] = '-'
+                new_castleable = copy.deepcopy(tree.castleable)
+                new_castleable[0] = False
+                new_castleable[1] = False
+                tree.children['0-0-0'] = MoveTree(0, new_board, not tree.wtm, new_castleable, '0-0-0')
+        else:
+            if castleable[2] and get(7,6) == '-' and get(7,5) == '-': #Kingside
+                new_board = copy.deepcopy(tree.board)
+                new_board[7][4] = '-'
+                new_board[7][5] = 'r'
+                new_board[7][6] = 'k'
+                new_board[7][7] = '-'
+                new_castleable = copy.deepcopy(tree.castleable)
+                new_castleable[2] = False
+                new_castleable[3] = False
+                tree.children['0-0'] = MoveTree(0, new_board, not tree.wtm, new_castleable, '0-0')
+            if castleable[3] and get(7,1) == '-' and get(7,2) == '-' and get(7,3) == '-': #Queenside
+                new_board = copy.deepcopy(tree.board)
+                new_board[7][0] = '-'
+                new_board[7][1] = '-'
+                new_board[7][2] = 'k'
+                new_board[7][3] = 'r'
+                new_board[7][4] = '-'
+                new_castleable = copy.deepcopy(tree.castleable)
+                new_castleable[2] = False
+                new_castleable[3] = False
+                tree.children['0-0-0'] = MoveTree(0, new_board, not tree.wtm, new_castleable, '0-0-0')
