@@ -1,3 +1,5 @@
+import copy
+
 def scan(tree, x, y, dir_x, dir_y, distance=7):
     #dir_x and dir_y are from -1 to 1 and represent the direction we are scanning
     #i.e. (dir_x,dir_y) is a normal vector in the correct direction
@@ -20,7 +22,7 @@ def find_all_children(tree):
     for x in range(0,8):
         for y in range(0,8):
             #If we found that our king is threatened by a legal move, stop processing
-            if tree.checkmate:
+            if tree.illegal:
                 return
             piece = tree.get(x,y)
             if tree.wtm:
@@ -52,8 +54,7 @@ def find_all_children(tree):
                 elif piece == 'k':
                     king_moves(tree,x,y)
     castle_check(tree)
-    if len(tree.children) == 0:
-        tree.checkmate = True
+    illegal_prune(tree)
     
 
 def king_moves(tree,x,y):
@@ -87,6 +88,7 @@ def diagonal_moves(tree,x,y):
 
 def pawn_moves(tree,x,y):
     get, wtm = tree.get, tree.wtm
+    enemy_eval = str.islower if wtm else str.isupper
     #Advance 1 square
     inc = 1 if wtm else -1
     generate_legal_move = tree.generate_promotion if (x+inc) % 7 == 0 else tree.generate_legal_move
@@ -96,9 +98,9 @@ def pawn_moves(tree,x,y):
         if get(x+2*inc,y) == '-' and x-inc % 7 == 0:
             generate_legal_move(x,y,x+2*inc,y)
     #Capture
-    if get(x+inc,y+1).islower():
+    if enemy_eval(get(x+inc,y+1)):
         generate_legal_move(x,y,x+inc,y+1)
-    if get(x+inc,y-1).islower():
+    if enemy_eval(get(x+inc,y-1)):
         generate_legal_move(x,y,x+inc,y-1)
 
 def castle_check(tree):
@@ -113,7 +115,7 @@ def castle_check(tree):
                 new_castleable = copy.deepcopy(tree.castleable)
                 new_castleable[0] = False
                 new_castleable[1] = False
-                tree.children['0-0'] = MoveTree(0, new_board, not tree.wtm, new_castleable, '0-0')
+                tree.add_child(new_board, '0-0', new_castleable)
             if castleable[1] and get(0,1) == '-' and get(0,2) == '-' and get(0,3) == '-': #Queenside
                 new_board = copy.deepcopy(tree.board)
                 new_board[0][0] = '-'
@@ -124,7 +126,7 @@ def castle_check(tree):
                 new_castleable = copy.deepcopy(tree.castleable)
                 new_castleable[0] = False
                 new_castleable[1] = False
-                tree.children['0-0-0'] = MoveTree(0, new_board, not tree.wtm, new_castleable, '0-0-0')
+                tree.add_child(new_board, '0-0-0', new_castleable)
         else:
             if castleable[2] and get(7,6) == '-' and get(7,5) == '-': #Kingside
                 new_board = copy.deepcopy(tree.board)
@@ -135,7 +137,7 @@ def castle_check(tree):
                 new_castleable = copy.deepcopy(tree.castleable)
                 new_castleable[2] = False
                 new_castleable[3] = False
-                tree.children['0-0'] = MoveTree(0, new_board, not tree.wtm, new_castleable, '0-0')
+                tree.add_child(new_board, '0-0', new_castleable)
             if castleable[3] and get(7,1) == '-' and get(7,2) == '-' and get(7,3) == '-': #Queenside
                 new_board = copy.deepcopy(tree.board)
                 new_board[7][0] = '-'
@@ -146,4 +148,18 @@ def castle_check(tree):
                 new_castleable = copy.deepcopy(tree.castleable)
                 new_castleable[2] = False
                 new_castleable[3] = False
-                tree.children['0-0-0'] = MoveTree(0, new_board, not tree.wtm, new_castleable, '0-0-0')
+                tree.add_child(new_board, '0-0-0', new_castleable)
+
+def illegal_prune(tree):
+        children = tree.children
+        mates = []
+        for san in children.keys():
+            if children[san].illegal:
+                #print('at depth = ' + str(tree.depth) + ', found a illegal from ' + san)
+                mates.append(san)
+        
+        for san in mates:
+            children.pop(san)
+
+        if len(children) == 0:
+            tree.checkmate = True

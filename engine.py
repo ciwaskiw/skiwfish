@@ -1,13 +1,13 @@
 from constants import TABLE_MAP, MATERIAL_VALUES
 
 def minimax(tree, depth = 1):
-    legal_moves = tree.legal_moves
+    children, wtm = tree.children, tree.wtm
     if depth < 2:
-        scores = list(map(lambda x: eval(legal_moves[x]), legal_moves.keys()))
-        #print(list(legal_moves.keys()))
+        scores = list(map(lambda x: (1 if wtm else -1) * eval(children[x]), children.keys()))
+        #print(list(children.keys()))
         #print(scores)
         max_score = max(scores)
-        return list(legal_moves.keys())[scores.index(max_score)]
+        return list(children.keys())[scores.index(max_score)]
 
     pass
 
@@ -24,7 +24,7 @@ def eval(tree):
             else: #If this is a black piece
                 score -= MATERIAL_VALUES[square.upper()] #Subtract the material value
                 score -= list(reversed(TABLE_MAP[square.upper()]))[i] #Subtract the piece-square-value for this piece on this square
-    mobility = len(tree.legal_moves) * 100 #Get mobility score
+    mobility = len(tree.children) * 100 #Get mobility score
     score += (1 if wtm else -1) * mobility #Add if evaluating white, subtract if evaluating black
     if tree.checkmate:
         score += 200000

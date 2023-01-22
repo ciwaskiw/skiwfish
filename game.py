@@ -1,5 +1,5 @@
 import copy, random
-from util import find_all_children
+from util import find_all_children, illegal_prune
 from engine import minimax
 from constants import STARTING_POSITION, UNICODE_PIECE_MAP
 def get_san_square(x,y):
@@ -8,15 +8,18 @@ def get_san_square(x,y):
 class MoveTree():
     depth = 0 #Depth of tree; i.e. the number of levels below here.
     parent = None #Parent tree object ref
+    last_move = None #Move to get here from parent
     children = {} #Map of s.a.n strings to child object refs
     board = [] #Board state
     wtm = True #True if white's move, false if black's
     castleable = [True,True,True,True] #White kingside then queenside, black kingside then queenside
     checkmate = False #(should be) True if children is empty
+    illegal = False #(should be) True if a to-be-made child can capture a king
 
-    def __init__(self, depth=0, parent = None, board=STARTING_POSITION, wtm=True, castleable=[True,True,True,True]):
+    def __init__(self, depth=0, parent=None, last_move=None, board=STARTING_POSITION, wtm=True, castleable=[True,True,True,True]):
         self.depth = depth
         self.parent = parent
+        self.last_move = last_move
         self.board = board
         self.wtm = wtm
         self.castleable = castleable
@@ -24,12 +27,16 @@ class MoveTree():
         if depth > 0:
             find_all_children(self)
     
+    def add_child(self, new_board, san, new_castleable):
+        self.children[san] = MoveTree(self.depth - 1, self, san, new_board, not self.wtm, new_castleable)
+
     def increment_depth(self):
         self.depth += 1
         for child in self.children.values():
             child.increment_depth()
         if self.depth == 1:
-            find_all_children()
+            find_all_children(self)
+        illegal_prune(self)
 
     def __str__(self):
         out = ""
@@ -43,17 +50,6 @@ class MoveTree():
             return '0'
         else:
             return self.board[x][y]
-
-    def illegal_prune(self):
-        illegal_sans = []
-        for san in self.children.keys():
-            if self.children[san].illegal == True:
-                illegal_sans.append(san)
-        
-        for san in illegal_sans:
-            self.children.pop(san)
-            #print(len(self.children))
-        
 
     def add_legal_move_to_tree(self, from_x, from_y, to_x, to_y, san, from_piece, new_piece):
         wtm = self.wtm
@@ -88,15 +84,20 @@ class MoveTree():
         if san in self.children:
             insert_index = 0 if san[0].islower() else 1
             new_san = san[:insert_index] + get_san_square(from_x,from_y) + san[insert_index:]
-            self.children[new_san] = MoveTree(self.depth - 1, self, new_board, not self.wtm, new_castleable)
+            self.add_child(new_board, new_san, new_castleable)
         else:
             #If no conflicts, just add it.
-            self.children[san] = MoveTree(self.depth - 1, self, new_board, not self.wtm, new_castleable)
+            self.add_child(new_board, san, new_castleable)
     
 
     def generate_promotion(self, from_x, from_y, to_x, to_y):
         """Special version of generate_legal_move that's for pawn promotions"""
         to_piece = self.get(to_x,to_y)
+
+        #If this move captures a king, then this position is a checkmate, and should be marked an illegal move
+        if to_piece.upper() == 'K':
+            self.illegal = True
+            return
         san_capture = '' if to_piece == '-' else 'x'
         san_square = get_san_square(to_x,to_y)
         #Generate 4 moves for each type of promotion
@@ -109,9 +110,9 @@ class MoveTree():
         """Given the 'from' square and the 'to' square, adds a move to the tree"""
         from_piece = self.get(from_x,from_y)
         to_piece = self.get(to_x,to_y)
-        #If this move captures a king, its parent should be marked a checkmate.
+        #If this move captures a king, then the previous move is illegal.
         if to_piece.upper() == 'K':
-            self.parent.checkmate = True
+            self.illegal = True
             return
         #Get SAN
         san_capture = '' if to_piece == '-' else 'x'
@@ -126,7 +127,7 @@ class MoveTree():
 
 
 class Game():
-    move_tree = MoveTree(2)
+    move_tree = MoveTree(3)
 
     def __str__(self):
         out = "  -----------------\n"
@@ -147,6 +148,7 @@ class Game():
         if san in self.move_tree.get_san_move_list():
             new_tree = self.move_tree.children[san]
             self.move_tree = new_tree
+            self.move_tree.increment_depth()
             return True
         else:
             return False
