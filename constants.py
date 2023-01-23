@@ -9,6 +9,8 @@ STARTING_POSITION = [
         ['r','n','b','q','k','b','n','r']
     ]
 
+INF = 100000000000000
+
 MATERIAL_VALUES = {
     'P': 100,
     'N': 350,

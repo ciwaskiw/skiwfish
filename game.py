@@ -1,7 +1,7 @@
 import copy, random
 from util import find_all_children, illegal_prune
 from engine import minimax
-from constants import STARTING_POSITION, UNICODE_PIECE_MAP
+from constants import STARTING_POSITION, UNICODE_PIECE_MAP, INF
 def get_san_square(x,y):
     return chr(y + 97) + str(x+1)
 
@@ -142,9 +142,10 @@ class Game():
 
     def move(self, san):
         if san == "engine":
-            san = minimax(self.move_tree)
+            san = minimax(self.move_tree, 3, -1*INF, INF)[0]
         elif san == "random":
             san = random.choice(self.move_tree.get_san_move_list())
+        print(san)
         if san in self.move_tree.get_san_move_list():
             new_tree = self.move_tree.children[san]
             self.move_tree = new_tree
