@@ -12,7 +12,7 @@ class MoveTree():
     children = {} #Map of s.a.n strings to child object refs
     board = [] #Board state
     wtm = True #True if white's move, false if black's
-    castleable = [True,True,True,True] #White kingside then queenside, black kingside then queenside
+    castleable = [False,False,True,True] #White kingside then queenside, black kingside then queenside
     checkmate = False #(should be) True if children is empty
     illegal = False #(should be) True if a to-be-made child can capture a king
 

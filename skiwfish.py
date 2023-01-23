@@ -9,7 +9,7 @@ while not new_game.move_tree.checkmate:
     while not white_move:
         print("\nLegal Moves For White: " + str(new_game.move_tree.get_san_move_list()))
         print("\n" + "White move?")
-        white_move = new_game.move('engine')#input())
+        white_move = new_game.move(input())
         if white_move:
             print(new_game)
             pass
@@ -18,7 +18,7 @@ while not new_game.move_tree.checkmate:
     while not black_move and not new_game.move_tree.checkmate:
         print("\nLegal Moves For Black: " + str(new_game.move_tree.get_san_move_list()))
         print("\n" + "Black move?")
-        black_move = new_game.move('random')#input())
+        black_move = new_game.move(input())
         if black_move:
             print(new_game)
             pass
